@@ -1,6 +1,8 @@
 from bs4 import BeautifulSoup
+import streamlit as st
 import re
 
+@st.cache_data
 def clean_summary(text):
 
     # Remove HTML
@@ -12,6 +14,7 @@ def clean_summary(text):
 
     return clean_text.strip()
 
+@st.cache_data
 def short_paragraph(text, max_sentences=2):
 
     sentences = text.split('.')
@@ -19,37 +22,37 @@ def short_paragraph(text, max_sentences=2):
     short_text = '. '.join(sentences[:max_sentences])
 
     return short_text.strip() + "."
-def extract_key_points(text):
 
-    finance_keywords = [
-        "RBI",
-        "Fed",
-        "inflation",
-        "repo rate",
-        "GDP",
-        "crude oil",
-        "bond yields",
-        "earnings",
-        "IPO",
-        "stocks",
-        "markets",
-        "forex",
-        "USD",
-        "banking"
-    ]
+@st.cache_data
 
-    points = []
+def extract_key_points(
+    text,
+    skip_sentences=2,
+    max_points=5
+):
 
     sentences = text.split('.')
 
-    for sentence in sentences:
+    points = []
 
-        for keyword in finance_keywords:
+    seen = set()
 
-            if keyword.lower() in sentence.lower():
+    # Skip summary sentences
+    remaining_sentences = sentences[
+        skip_sentences:
+    ]
 
-                points.append(sentence.strip())
+    for sentence in remaining_sentences:
 
-                break
+        clean_sentence = sentence.strip()
 
-    return points[:3]
+        if (
+            len(clean_sentence) > 30
+            and clean_sentence not in seen
+        ):
+
+            seen.add(clean_sentence)
+
+            points.append(clean_sentence)
+
+    return points[:max_points]

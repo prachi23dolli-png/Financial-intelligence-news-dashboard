@@ -1,6 +1,68 @@
+
 import streamlit as st
 import feedparser
+IMPORTANT_KEYWORDS = [
 
+    # Macro
+    "inflation",
+    "GDP",
+    "recession",
+    "economy",
+    "economic growth",
+    "fiscal deficit",
+
+    # Central Banks
+    "RBI",
+    "Federal Reserve",
+    "ECB",
+    "interest rates",
+    "repo rate",
+    "monetary policy",
+
+    # Markets
+    "stocks",
+    "markets",
+    "Sensex",
+    "Nifty",
+    "bond yields",
+    "forex",
+    "USD",
+    "treasury",
+
+    # Banking
+    "bank",
+    "banking",
+    "liquidity",
+    "credit growth",
+
+    # Commodities
+    "gold",
+    "crude oil",
+    "oil prices",
+
+    # Corporate
+    "earnings",
+    "IPO",
+    "profit",
+    "revenue",
+    "valuation",
+
+    # Global
+    "China",
+    "US economy",
+    "trade war",
+    "tariffs"
+]
+def is_relevant_news(title, summary):
+
+    text = f"{title} {summary}".lower()
+
+    for keyword in IMPORTANT_KEYWORDS:
+
+        if keyword.lower() in text:
+            return True
+
+    return False
 RSS_FEEDS = {
 
     "Global": [
@@ -13,7 +75,7 @@ RSS_FEEDS = {
         "https://www.financialexpress.com/market/feed/"
     ],
     "RBI": [
-    "https://rbi.org.in/rss/RSS.aspx?Id=200"
+    "https://news.google.com/rss/search?q=RBI+monetary+policy"
 ],
     "Economy": [
         "https://feeds.feedburner.com/ndtvprofit-latest",
@@ -52,6 +114,10 @@ def fetch_news():
                     continue
 
                 seen_titles.add(title)
+
+                summary = entry.summary if "summary" in entry else ""
+                if not is_relevant_news(title, summary):
+                    continue
 
                 articles.append({
 

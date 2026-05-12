@@ -1,17 +1,18 @@
 import streamlit as st
 from market_data import get_market_data
 from news_fetcher import fetch_news, RSS_FEEDS
-from streamlit_autorefresh import st_autorefresh
 from text_utils import (
     clean_summary,
     short_paragraph,
     extract_key_points
 )
+from streamlit_autorefresh import st_autorefresh
+from datetime import datetime
 
 # ---------------- PAGE CONFIG ---------------- #
 
 st.set_page_config(
-    page_title="AI Financial Dashboard",
+    page_title="AI Financial Intelligence Dashboard",
     page_icon="📈",
     layout="wide"
 )
@@ -25,15 +26,16 @@ st_autorefresh(interval=300000, key="refresh")
 st.markdown("""
 <style>
 
-/* Main Background */
+/* Main App */
 .stApp {
-    background-color: #0E1117;
+    background-color: #0B0F19;
     color: white;
 }
 
-/* Headers */
+/* Headings */
 h1, h2, h3 {
     color: #00D4FF;
+    font-weight: 700;
 }
 
 /* Sidebar */
@@ -41,73 +43,92 @@ section[data-testid="stSidebar"] {
     background-color: #111827;
 }
 
-/* Market Cards */
+/* Metric Cards */
 div[data-testid="metric-container"] {
-    background-color: #1A1F2E;
-    border: 1px solid #2A2F3E;
+    background-color: #161B22;
+    border: 1px solid #2D3748;
     padding: 15px;
-    border-radius: 15px;
-    text-align: center;
+    border-radius: 14px;
 }
 
 /* News Cards */
 .news-card {
     background-color: #161B22;
-    padding: 25px;
-    border-radius: 18px;
     border: 1px solid #2D3748;
-    margin-bottom: 20px;
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 16px;
 }
 
-/* Search Box */
-.stTextInput > div > div > input {
-    background-color: #1A1F2E;
+/* Featured Card */
+.feature-card {
+    background: linear-gradient(
+        135deg,
+        #1A2333,
+        #111827
+    );
+    border: 1px solid #00D4FF;
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 25px;
+}
+
+/* Tabs */
+button[data-baseweb="tab"] {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Search */
+.stTextInput input {
+    background-color: #161B22;
     color: white;
 }
 
-/* Selectbox */
-.stSelectbox > div > div {
-    background-color: #1A1F2E;
-}
-
-/* Divider */
-hr {
-    border-color: #2D3748;
+/* Footer */
+.footer {
+    text-align: center;
+    color: gray;
+    margin-top: 40px;
 }
 
 </style>
 """, unsafe_allow_html=True)
-
-# ---------------- SIDEBAR ---------------- #
-
-st.sidebar.title("Dashboard Controls")
-
-categories = ["All"] + list(RSS_FEEDS.keys())
-
-selected_category = st.sidebar.selectbox(
-    "Select Category",
-    categories
-)
-
-search_query = st.sidebar.text_input(
-    "Search Financial News"
-)
-
-st.sidebar.markdown("---")
-
-st.sidebar.caption("AI Financial Intelligence Dashboard")
 
 # ---------------- HEADER ---------------- #
 
 st.title("AI Financial Intelligence Dashboard")
 
 st.caption(
-    "Live markets, macro updates, and financial news"
+    "Live markets, macro tracking, and financial intelligence"
 )
 
-st.markdown("---")
+# ---------------- MARKET STATUS ---------------- #
 
-# ---------------- MARKET DATA ---------------- #
+market_status = "🟢 Market Open"
+
+current_time = datetime.now().strftime(
+    "%d %b %Y | %I:%M %p"
+)
+
+st.markdown(
+    f"""
+    <div style='
+        background-color:#111827;
+        padding:12px;
+        border-radius:12px;
+        margin-bottom:20px;
+    '>
+    <b>{market_status}</b>
+    <span style='float:right'>
+    Last Updated: {current_time}
+    </span>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# ---------------- MARKET TICKER ---------------- #
 
 market_data = get_market_data()
 
@@ -115,126 +136,170 @@ st.subheader("Live Market Overview")
 
 market_cols = st.columns(len(market_data))
 
-for col, (market, values) in zip(market_cols, market_data.items()):
+for col, (market, values) in zip(
+    market_cols,
+    market_data.items()
+):
 
     with col:
 
         st.metric(
             market,
             values["price"],
-            f'{values["change"]}%'
+            f"{values['change']}%"
         )
 
 st.markdown("---")
 
-# ---------------- NEWS SECTION ---------------- #
+# ---------------- SEARCH ---------------- #
 
-st.subheader("Latest Financial News")
+search_query = st.text_input(
+    "Search financial news"
+)
+
+# ---------------- FETCH NEWS ---------------- #
 
 news = fetch_news()
 
-for article in news:
+# ---------------- FEATURED STORY ---------------- #
 
-    article_category = article.get("category", "General")
+if news:
 
-    # Category Filter
-    if selected_category != "All":
+    top_story = news[0]
 
-        if article_category != selected_category:
-            continue
+    featured_summary = short_paragraph(
+        clean_summary(top_story["summary"]),
+        max_sentences=3
+    )
 
-    # Search Filter
-    if search_query:
+    st.markdown("## 🔥 Top Market Story")
 
-        if search_query.lower() not in article["title"].lower():
-            continue
+    st.badge(
+        top_story.get("category", "General")
+    )
 
-    clean_text = clean_summary(article["summary"])
+    st.subheader(top_story["title"])
 
-    short_text = short_paragraph(clean_text)
+    st.write(featured_summary)
 
-    key_points = extract_key_points(clean_text)
+    st.link_button(
+        "Read Full Story",
+        top_story["link"]
+    )
 
-    # -------- NEWS CARD -------- #
+    st.markdown("</div>", unsafe_allow_html=True)
 
-key_points_html = ""
+# ---------------- TABS ---------------- #
 
-for point in key_points:
-    key_points_html += f"<li>{point}</li>"
+tabs = st.tabs(
+    ["All"] + list(RSS_FEEDS.keys())
+)
 
-card_html = f"""
-<div style="
-    background-color:#161B22;
-    padding:25px;
-    border-radius:18px;
-    border:1px solid #2D3748;
-    margin-bottom:20px;
-">
+# ---------------- RENDER NEWS ---------------- #
 
-    <span style="
-        background-color:#00D4FF;
-        color:black;
-        padding:6px 12px;
-        border-radius:10px;
-        font-size:12px;
-        font-weight:bold;
-    ">
-        {article_category}
-    </span>
+for tab, category in zip(
+    tabs,
+    ["All"] + list(RSS_FEEDS.keys())
+):
 
-    <h3 style="
-        color:white;
-        margin-top:15px;
-    ">
-        {article["title"]}
-    </h3>
+    with tab:
 
-    <p style="
-        color:#D1D5DB;
-        font-size:16px;
-        line-height:1.7;
-    ">
-        {short_text}
-    </p>
+        filtered_news = []
 
-    <h4 style="color:#00D4FF;">
-        Key Points
-    </h4>
+        for article in news:
 
-    <ul style="
-        color:#E5E7EB;
-        line-height:1.8;
-    ">
-        {key_points_html}
-    </ul>
+            article_category = article.get(
+                "category",
+                "General"
+            )
 
-    <a href="{article['link']}"
-       target="_blank"
-       style="
-        text-decoration:none;
-       ">
-        <button style="
-            background-color:#00D4FF;
-            color:black;
-            border:none;
-            padding:10px 18px;
-            border-radius:10px;
-            cursor:pointer;
-            font-weight:bold;
-        ">
-            Read Full Article
-        </button>
-    </a>
+            # Tab filtering
+            if category != "All":
 
-</div>
-"""
+                if article_category != category:
+                    continue
 
-st.markdown(card_html, unsafe_allow_html=True)
+            # Search filtering
+            if search_query:
+
+                if (
+                    search_query.lower()
+                    not in article["title"].lower()
+                ):
+                    continue
+
+            filtered_news.append(article)
+
+        # News Count
+        st.caption(
+            f"Showing {len(filtered_news)} articles"
+        )
+
+        # Compact 2-column layout
+        cols = st.columns(2)
+
+        for idx, article in enumerate(filtered_news):
+
+            clean_text = clean_summary(
+                article["summary"]
+            )
+
+            short_text = short_paragraph(
+                clean_text,
+                max_sentences=2
+            )
+
+            key_points = extract_key_points(
+                clean_text
+            )
+
+            with cols[idx % 2]:
+
+                st.badge(
+                    article.get(
+                        "category",
+                        "General"
+                    )
+                )
+
+                st.markdown(
+                    f"### {article['title']}"
+                )
+
+                st.write(short_text)
+
+                if key_points:
+
+                    st.markdown(
+                        "#### Key Points"
+                    )
+
+                    for point in key_points[:2]:
+
+                        st.write(
+                            f"• {point}"
+                        )
+
+                st.link_button(
+                    "Read More",
+                    article["link"]
+                )
+
+                st.markdown(
+                    "</div>",
+                    unsafe_allow_html=True
+                )
 
 # ---------------- FOOTER ---------------- #
 
 st.markdown("---")
 
-st.caption(
-    "Built using Streamlit, Python, RSS feeds, and financial market APIs"
+st.markdown(
+    """
+    <div class="footer">
+    Built using Python, Streamlit, RSS feeds,
+    and financial market APIs
+    </div>
+    """,
+    unsafe_allow_html=True
 )
