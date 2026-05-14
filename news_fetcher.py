@@ -53,6 +53,7 @@ IMPORTANT_KEYWORDS = [
     "trade war",
     "tariffs"
 ]
+
 def is_relevant_news(title, summary):
 
     text = f"{title} {summary}".lower()
@@ -91,7 +92,7 @@ RSS_FEEDS = {
     ]
 }
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=60)
 def fetch_news():
 
     articles = []
@@ -105,7 +106,7 @@ def fetch_news():
             feed = feedparser.parse(url)
             print(category, len(feed.entries))
 
-            for entry in feed.entries[:10]:
+            for entry in feed.entries[:5]:
 
                 title = entry.title
 
@@ -118,16 +119,20 @@ def fetch_news():
                 summary = entry.summary if "summary" in entry else ""
                 if not is_relevant_news(title, summary):
                     continue
-
+                
                 articles.append({
-
                     "category": category,
-
                     "title": title,
+                    "summary": summary,
+                    "link": entry.link,
+                    "published": entry.published
+                    if "published" in entry
+                    else ""
+})
 
-                    "summary": entry.summary if "summary" in entry else "",
-
-                    "link": entry.link
-                })
-
+                articles = sorted(
+                    articles,
+                    key=lambda x: x.get("published", ""),
+                    reverse=True
+                    )
     return articles
