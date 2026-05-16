@@ -8,6 +8,9 @@ from text_utils import (
 )
 from streamlit_autorefresh import st_autorefresh
 from datetime import datetime
+st.caption(
+    f"Last Updated: {datetime.now().strftime('%H:%M:%S')}"
+)
 
 # ---------------- PAGE CONFIG ---------------- #
 
@@ -16,10 +19,15 @@ st.set_page_config(
     page_icon="📈",
     layout="wide"
 )
+if st.sidebar.button("Refresh Latest News"):
+
+    st.cache_data.clear()
+
+    st.rerun()
 
 # ---------------- AUTO REFRESH ---------------- #
 
-st_autorefresh(interval=300000, key="refresh")
+st_autorefresh(interval=60000, key="refresh")
 
 # ---------------- CUSTOM CSS ---------------- #
 

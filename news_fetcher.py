@@ -92,7 +92,7 @@ RSS_FEEDS = {
     ]
 }
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=45)
 def fetch_news():
 
     articles = []
